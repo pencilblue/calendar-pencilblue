@@ -2,7 +2,8 @@
 =====
 
 ##### Display events in a responsive calendar layout
-##### Uses the [FullCalendar](https://github.com/arshaw/fullcalendar) jQuery plugin by [AdamShaw](https://github.com/arshaw)
+
+Uses the [FullCalendar](https://github.com/arshaw/fullcalendar) jQuery plugin by [AdamShaw](https://github.com/arshaw)
 
 Installation and Setup
 -----
