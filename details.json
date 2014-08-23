@@ -1,0 +1,40 @@
+{
+    "uid": "calendar-pencilblue",
+    "name": "PencilBlue Events Calendar",
+    "description": "Manage events and display them within a calendar view.",
+    "version": "0.0.1",
+    "author": {
+        "name": "PencilBlue",
+        "email": "info@pencilblue.org",
+        "website": "http://pencilblue.org",
+        "contributors": [
+            {
+                "name": "Blake Callens",
+                "email": ""
+            },
+            {
+                "name": "Brian Hyder",
+                "email": ""
+            }
+        ]
+    },
+    "settings": [
+        {
+            "name": "display_as_list",
+            "value": false
+        },
+        {
+            "name": "calendar_css",
+            "value": "/public/calendar-pencilblue/css/calendar-pencilblue.css"
+        }
+    ],
+    "permissions": {
+        "ACCESS_USER": [],
+        "ACCESS_WRITER": [],
+        "ACCESS_EDITOR": [],
+        "ACCESS_MANAGING_EDITOR": []
+    },
+    "main_module": {
+        "path": "calendar.js"
+    }
+}

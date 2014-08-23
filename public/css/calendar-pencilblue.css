@@ -1,0 +1,18 @@
+.fc-event {
+    border: 1px solid #00AAD4;
+    background: #00AAD4;
+}
+
+.fc-above-768 {
+    display: none;
+}
+
+@media (min-width: 768px) {
+    .fc-above-768 {
+        display: block;
+    }
+
+    .fc-below-768 {
+        display: none;
+    }
+}
