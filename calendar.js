@@ -31,13 +31,13 @@ function Calendar(){}
  */
 Calendar.onInstall = function(cb) {
     var self = this;
-    var dao = new pb.DAO();
+    var cos = new pb.CustomObjectService();
 
     this.setupVenuesType = function() {
-        dao.loadByValue('name', 'pb_calendar_venue', 'custom_object_type', function(err, customObjectType) {
-            if(!customObjectType) {
-                var objectTypeDocument = {object_type: 'custom_object_type', name: 'pb_calendar_venue', fields: {name: {field_type: 'text'}, description: {field_type: 'text'}, address: {field_type: 'text'}, url: {field_type: 'text'}}};
-                dao.update(objectTypeDocument).then(function(result) {
+        cos.loadTypeByName('pb_calendar_venue', function(err, venueType) {
+            if(!venueType) {
+                var venueValues = {name: 'pb_calendar_venue', fields: {name: {field_type: 'text'}, description: {field_type: 'text'}, address: {field_type: 'text'}, url: {field_type: 'text'}}};
+                cos.saveType(venueValues, function(err, venueType) {
                     self.setupEventsType();
                 });
             }
@@ -48,10 +48,10 @@ Calendar.onInstall = function(cb) {
     };
 
     this.setupEventsType = function() {
-        dao.loadByValue('name', 'pb_calendar_event', 'custom_object_type', function(err, customObjectType) {
-            if(!customObjectType) {
-                var objectTypeDocument = {object_type: 'custom_object_type', name: 'pb_calendar_event', fields: {name: {field_type: 'text'}, start_date: {field_type: 'date'}, end_date: {field_type: 'date'}, description: {field_type: 'text'}, venue: {field_type: 'peer_object', object_type: 'custom:pb_calendar_venue'}, url: {field_type: 'text'}, topics: {field_type: 'child_objects', object_type: 'topic'}}};
-                dao.update(objectTypeDocument).then(function(result) {
+        cos.loadTypeByName('pb_calendar_event', function(err, eventType) {
+            if(!eventType) {
+                var eventValues = {name: 'pb_calendar_event', fields: {name: {field_type: 'text'}, start_date: {field_type: 'date'}, end_date: {field_type: 'date'}, description: {field_type: 'text'}, venue: {field_type: 'peer_object', object_type: 'custom:pb_calendar_venue'}, url: {field_type: 'text'}, topics: {field_type: 'child_objects', object_type: 'topic'}}};
+                cos.saveType(eventValues, function(err, eventType) {
                     cb(null, true);
                 });
             }
@@ -85,10 +85,12 @@ Calendar.onUninstall = function(cb) {
  * The result is ignored
  */
 Calendar.onStartup = function(cb) {
+    var self = this;
+    var cos = new pb.CustomObjectService();
     var dao = new pb.DAO();
 
-    dao.loadByValue('name', 'pb_calendar_event', 'custom_object_type', function(err, customObjectType) {
-        if(customObjectType) {
+    cos.loadTypeByName('pb_calendar_event', function(err, eventType) {
+        if(eventType) {
             pb.AdminSubnavService.registerFor('plugin_settings', function(navKey, localization, plugin) {
                 if(plugin.uid === 'calendar-pencilblue') {
                     return [
@@ -96,7 +98,7 @@ Calendar.onStartup = function(cb) {
                             name: 'events',
                             title: 'Events',
                             icon: 'calendar',
-                            href: '/admin/content/custom_objects/manage_objects/' + customObjectType._id.toString()
+                            href: '/admin/content/custom_objects/manage_objects/' + eventType._id.toString()
                         }
                     ];
                 }
@@ -104,8 +106,8 @@ Calendar.onStartup = function(cb) {
             });
         }
 
-        dao.loadByValue('name', 'pb_calendar_venue', 'custom_object_type', function(err, customObjectType) {
-            if(customObjectType) {
+        cos.loadTypeByName('pb_calendar_venue', function(err, venueType) {
+            if(venueType) {
                 pb.AdminSubnavService.registerFor('plugin_settings', function(navKey, localization, plugin) {
                     if(plugin.uid === 'calendar-pencilblue') {
                         return [
@@ -113,7 +115,7 @@ Calendar.onStartup = function(cb) {
                                 name: 'venues',
                                 title: 'Venues',
                                 icon: 'building-o',
-                                href: '/admin/content/custom_objects/manage_objects/' + customObjectType._id.toString()
+                                href: '/admin/content/custom_objects/manage_objects/' + venueType._id.toString()
                             }
                         ];
                     }
@@ -207,13 +209,13 @@ Calendar.onStartup = function(cb) {
             ts.load('elements/event', function(err, eventTemp) {
                 eventTemplate = eventTemp;
 
-                dao.loadByValue('name', 'pb_calendar_event', 'custom_object_type', function(err, customObjectType) {
-                    if(!customObjectType) {
+                cos.loadTypeByName('pb_calendar_event', function(err, eventType) {
+                    if(!eventType) {
                         cb(err, '');
                         return;
                     }
 
-                    dao.query('custom_object', {type: customObjectType._id.toString(), start_date: {$gte: now}}, pb.DAO.SELECT_ALL, [["start_date", pb.DAO.ASC]]).then(function(eventObjects) {
+                    dao.query('custom_object', {type: eventType._id.toString(), end_date: {$gte: now}}, pb.DAO.SELECT_ALL, [["start_date", pb.DAO.ASC]]).then(function(eventObjects) {
                         eventData = eventObjects;
                         formatEvent(0);
                     });
@@ -223,8 +225,8 @@ Calendar.onStartup = function(cb) {
     });
 
     pb.TemplateService.registerGlobal('pb_calendar_events', function(flag, cb) {
-        dao.loadByValue('name', 'pb_calendar_event', 'custom_object_type', function(err, customObjectType) {
-            if(!customObjectType) {
+        cos.loadTypeByName('pb_calendar_event', function(err, eventType) {
+            if(!eventType) {
                 cb(err, '[]');
                 return;
             }
@@ -233,13 +235,13 @@ Calendar.onStartup = function(cb) {
             var timezoneOffset = now.getTimezoneOffset() * 1000 * 60;
 
             var events = [];
-            dao.query('custom_object', {type: customObjectType._id.toString()}).then(function(customObjects) {
-                for(var i = 0; i < customObjects.length; i++) {
+            dao.query('custom_object', {type: eventType._id.toString()}).then(function(eventObjects) {
+                for(var i = 0; i < eventObjects.length; i++) {
                     var event = {
-                        title: customObjects[i].name,
-                        start: new Date(customObjects[i].start_date).getTime() - timezoneOffset,
-                        end: new Date(customObjects[i].end_date).getTime() - timezoneOffset,
-                        url: customObjects[i].url.length ? customObjects[i].url : null
+                        title: eventObjects[i].name,
+                        start: new Date(eventObjects[i].start_date).getTime() - timezoneOffset,
+                        end: new Date(eventObjects[i].end_date).getTime() - timezoneOffset,
+                        url: (new Date(eventObjects[i].end_date) >= now) ? '#event_' + eventObjects[i]._id.toString() : null
                     };
 
                     events.push(event);
