@@ -213,7 +213,7 @@ Calendar.onStartup = function(cb) {
                         return;
                     }
 
-                    dao.query('custom_object', {type: customObjectType._id.toString(), start_date: {$gte: now}}).then(function(eventObjects) {
+                    dao.query('custom_object', {type: customObjectType._id.toString(), start_date: {$gte: now}}, pb.DAO.SELECT_ALL, [["start_date", pb.DAO.ASC]]).then(function(eventObjects) {
                         eventData = eventObjects;
                         formatEvent(0);
                     });
