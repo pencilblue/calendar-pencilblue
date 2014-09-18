@@ -215,7 +215,7 @@ Calendar.onStartup = function(cb) {
                         return;
                     }
 
-                    dao.query('custom_object', {type: eventType._id.toString(), start_date: {$gte: now}}, pb.DAO.SELECT_ALL, [["start_date", pb.DAO.ASC]]).then(function(eventObjects) {
+                    dao.query('custom_object', {type: eventType._id.toString(), end_date: {$gte: now}}, pb.DAO.SELECT_ALL, [["start_date", pb.DAO.ASC]]).then(function(eventObjects) {
                         eventData = eventObjects;
                         formatEvent(0);
                     });
@@ -241,7 +241,7 @@ Calendar.onStartup = function(cb) {
                         title: eventObjects[i].name,
                         start: new Date(eventObjects[i].start_date).getTime() - timezoneOffset,
                         end: new Date(eventObjects[i].end_date).getTime() - timezoneOffset,
-                        url: eventObjects[i].url.length ? eventObjects[i].url : null
+                        url: (new Date(eventObjects[i].end_date) >= now) ? '#event_' + eventObjects[i]._id.toString() : null
                     };
 
                     events.push(event);
