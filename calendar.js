@@ -241,7 +241,7 @@ Calendar.onStartup = function(cb) {
                         title: eventObjects[i].name,
                         start: new Date(eventObjects[i].start_date).getTime() - timezoneOffset,
                         end: new Date(eventObjects[i].end_date).getTime() - timezoneOffset,
-                        url: (new Date(eventObjects[i].end_date) >= now) ? '#event_' + eventObjects[i]._id.toString() : null
+                        url: (new Date(eventObjects[i].end_date) >= now) ? 'javascript:$("#event_' + eventObjects[i]._id.toString() + '")[0].scrollIntoView(true)' : null
                     };
 
                     events.push(event);
