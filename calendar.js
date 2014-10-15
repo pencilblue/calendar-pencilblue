@@ -152,16 +152,14 @@ Calendar.onStartup = function(cb) {
                 return;
             }
 
-            var event = eventData[index];
-            dao.loadById(event.venue, 'custom_object', function(error, venue) {
-                if(!venue) {
-                    venue = {
-                        name: '',
-                        address: '',
-                        url: ''
-                    };
-                }
+            var defaultVenue = {
+                name: '',
+                address: '',
+                url: ''
+            };
 
+            var event = eventData[index];
+            self.getVenue(event.venue, function(venue) {
                 var eventString = eventTemplate.split('^event_url^').join(event.url);
                 eventString = eventString.split('^event_id^').join(event._id.toString());
                 eventString = eventString.split('^event_name^').join(event.name);
@@ -176,6 +174,28 @@ Calendar.onStartup = function(cb) {
                 events += eventString;
                 index++;
                 self.formatEvent(index);
+            });
+        };
+
+        this.getVenue = function(venueId, cb) {
+            var defaultVenue = {
+                name: '',
+                address: '',
+                url: ''
+            };
+
+            if(!venueId || !pb.validation.isIdStr(venueId)) {
+                cb(defaultVenue);
+                return;
+            }
+
+            dao.loadById(venueId, 'custom_object', function(error, venue) {
+                if(!venue) {
+                    cb(defaultVenue);
+                    return;
+                }
+
+                cb(venue);
             });
         };
 
