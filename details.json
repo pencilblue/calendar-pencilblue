@@ -2,7 +2,7 @@
     "uid": "calendar-pencilblue",
     "name": "PencilBlue Events Calendar",
     "description": "Manage events and display them within a calendar view.",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "pb_version": "0.4.x",
     "author": {
         "name": "PencilBlue",
