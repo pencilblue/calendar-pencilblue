@@ -18,6 +18,7 @@
 module.exports = function(pb) {
     
     //pb dependencies
+    var util          = pb.util;
     var PluginService = pb.PluginService;
 
     /**
@@ -40,8 +41,7 @@ module.exports = function(pb) {
 
         dao.loadById(this.pathVars.id, 'custom_object', function(error, event) {
             if(!event) {
-                self.reqHandler.serve404();
-                return;
+                return self.reqHandler.serve404();
             }
 
             dao.loadById(event.venue, 'custom_object', function(error, venue) {
