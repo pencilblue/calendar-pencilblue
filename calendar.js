@@ -17,6 +17,10 @@
 
 module.exports = function(pb) {
     
+    //pb dependencies
+    var util          = pb.util;
+    var PluginService = pb.PluginService;
+    
     /**
      * Calendar - Manage events and display them within a calendar view.
      *
@@ -128,13 +132,15 @@ module.exports = function(pb) {
         });
 
         pb.TemplateService.registerGlobal('pb_calendar_css', function(flag, cb) {
-            pb.plugins.getSetting('calendar_css', 'calendar-pencilblue', function(err, calendarCSS) {
+            var pluginService = new PluginService();
+            pluginService.getSetting('calendar_css', 'calendar-pencilblue', function(err, calendarCSS) {
                 cb(err, calendarCSS);
             });
         });
 
         pb.TemplateService.registerGlobal('pb_show_calendar', function(flag, cb) {
-            pb.plugins.getSetting('display_as_list', 'calendar-pencilblue', function(err, displayAsList) {
+            var pluginService = new PluginService();
+            pluginService.getSetting('display_as_list', 'calendar-pencilblue', function(err, displayAsList) {
                 cb(err, displayAsList ? 'display: none' : '');
             });
         });
