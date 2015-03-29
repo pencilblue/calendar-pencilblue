@@ -18,8 +18,9 @@
 module.exports = function(pb) {
     
     //pb dependencies
-    var util          = pb.util;
-    var PluginService = pb.PluginService;
+    var util           = pb.util;
+    var PluginService  = pb.PluginService;
+    var ContentService = pb.ContentService;
     
     /**
      * Calendar - Manage events and display them within a calendar view.
@@ -171,7 +172,7 @@ module.exports = function(pb) {
                     var eventString = eventTemplate.split('^event_url^').join(event.url);
                     eventString = eventString.split('^event_id^').join(event._id.toString());
                     eventString = eventString.split('^event_name^').join(event.name);
-                    eventString = eventString.split('^event_date^').join(pb.content.getTimestampTextFromSettings(event.start_date, contentSettings));
+                    eventString = eventString.split('^event_date^').join(ContentService.getTimestampTextFromSettings(event.start_date, contentSettings, self.ls));
                     eventString = eventString.split('^venue_url^').join(venue.url);
                     eventString = eventString.split('^venue_name^').join(venue.name);
                     eventString = eventString.split('^venue_address^').join(venue.address);
@@ -231,7 +232,8 @@ module.exports = function(pb) {
                 return date.getUTCFullYear() + month + day + 'T' + hours + minutes + '00Z';
             };
 
-            pb.content.getSettings(function(err, settings) {
+            var contentService = new ContentService();
+            contentService.getSettings(function(err, settings) {
                 //handle error
                 contentSettings = settings;
 
