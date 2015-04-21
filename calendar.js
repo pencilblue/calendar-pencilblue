@@ -29,6 +29,55 @@ module.exports = function(pb) {
      * @copyright 2014 PencilBlue, LLC
      */
     function Calendar(){}
+    
+    /**
+     *
+     * @private
+     * @static
+     * @readonly
+     * @property VENUE_OBJ_TYPE
+     */
+    var VENUE_OBJ_TYPE = 'pb_calendar_venue';
+    
+    /**
+     *
+     * @private
+     * @static
+     * @readonly
+     * @property EVENT_OBJ_TYPE
+     */
+    var EVENT_OBJ_TYPE = 'pb_calendar_event';
+    
+    /**
+     *
+     * @private
+     * @static
+     * @readonly
+     * @property TYPE_URL_PATH
+     */
+    var TYPE_URL_PATH = '/admin/content/objects/';
+    
+    /**
+     *
+     * @private
+     * @static
+     * @readonly
+     * @property FIELD_TYPE_TEXT
+     */
+    var FIELD_TYPE_TEXT = Object.freeze({
+        field_type: 'text'
+    });
+    
+    /**
+     *
+     * @private
+     * @static
+     * @readonly
+     * @property FIELD_TYPE_DATE
+     */
+    var FIELD_TYPE_DATE = Object.freeze({
+        field_type: 'date'
+    });
 
     /**
      * Called when the application is being installed for the first time.
@@ -41,30 +90,53 @@ module.exports = function(pb) {
         var cos = new pb.CustomObjectService();
 
         this.setupVenuesType = function() {
-            cos.loadTypeByName('pb_calendar_venue', function(err, venueType) {
-                if(!venueType) {
-                    var venueValues = {name: 'pb_calendar_venue', fields: {name: {field_type: 'text'}, description: {field_type: 'text'}, address: {field_type: 'text'}, url: {field_type: 'text'}}};
-                    cos.saveType(venueValues, function(err, venueType) {
-                        self.setupEventsType();
-                    });
+            cos.loadTypeByName(VENUE_OBJ_TYPE, function(err, venueType) {
+                if (venueType) {
+                    return cb(null, true);
                 }
-                else {
+
+                var venueValues = {
+                    name: VENUE_OBJ_TYPE, 
+                    fields: {
+                        name: FIELD_TYPE_TEXT,
+                        description: FIELD_TYPE_TEXT, 
+                        address: FIELD_TYPE_TEXT, 
+                        url: FIELD_TYPE_TEXT
+                    }
+                };
+                cos.saveType(venueValues, function(err, venueType) {
                     self.setupEventsType();
-                }
+                });
             });
         };
 
         this.setupEventsType = function() {
-            cos.loadTypeByName('pb_calendar_event', function(err, eventType) {
-                if(!eventType) {
-                    var eventValues = {name: 'pb_calendar_event', fields: {name: {field_type: 'text'}, start_date: {field_type: 'date'}, end_date: {field_type: 'date'}, description: {field_type: 'text'}, venue: {field_type: 'peer_object', object_type: 'custom:pb_calendar_venue'}, url: {field_type: 'text'}, topics: {field_type: 'child_objects', object_type: 'topic'}}};
-                    cos.saveType(eventValues, function(err, eventType) {
-                        cb(null, true);
-                    });
+            cos.loadTypeByName(EVENT_OBJ_TYPE, function(err, eventType) {
+                if (eventType) {
+                    return cb(null, true);
                 }
-                else {
+                
+                var eventValues = {
+                    name: EVENT_OBJ_TYPE, 
+                    fields: {
+                        name: FIELD_TYPE_TEXT, 
+                        start_date: FIELD_TYPE_DATE, 
+                        end_date: FIELD_TYPE_DATE, 
+                        description: FIELD_TYPE_TEXT, 
+                        venue: {
+                            field_type: 'peer_object', 
+                            object_type: 'custom:pb_calendar_venue'
+                        }, 
+                        url: FIELD_TYPE_TEXT, 
+                        topics: {
+                            field_type: 'child_objects', 
+                            object_type: 'topic'
+                        }
+                    }
+                };
+                cos.saveType(eventValues, function(err, eventType) {
                     cb(null, true);
-                }
+                });
             });
         };
 
@@ -96,7 +168,7 @@ module.exports = function(pb) {
         var cos = new pb.CustomObjectService();
         var dao = new pb.DAO();
 
-        cos.loadTypeByName('pb_calendar_event', function(err, eventType) {
+        cos.loadTypeByName(EVENT_OBJ_TYPE, function(err, eventType) {
             if(eventType) {
                 pb.AdminSubnavService.registerFor('plugin_settings', function(navKey, localization, plugin) {
                     if(plugin.uid === 'calendar-pencilblue') {
@@ -105,7 +177,7 @@ module.exports = function(pb) {
                                 name: 'events',
                                 title: 'Events',
                                 icon: 'calendar',
-                                href: '/admin/content/custom_objects/manage_objects/' + eventType._id.toString()
+                                href: TYPE_URL_PATH + eventType[pb.DAO.getIdField()]
                             }
                         ];
                     }
@@ -113,7 +185,7 @@ module.exports = function(pb) {
                 });
             }
 
-            cos.loadTypeByName('pb_calendar_venue', function(err, venueType) {
+            cos.loadTypeByName(VENUE_OBJ_TYPE, function(err, venueType) {
                 if(venueType) {
                     pb.AdminSubnavService.registerFor('plugin_settings', function(navKey, localization, plugin) {
                         if(plugin.uid === 'calendar-pencilblue') {
@@ -122,7 +194,7 @@ module.exports = function(pb) {
                                     name: 'venues',
                                     title: 'Venues',
                                     icon: 'building-o',
-                                    href: '/admin/content/custom_objects/manage_objects/' + venueType._id.toString()
+                                    href: TYPE_URL_PATH + venueType[pb.DAO.getIdField()]
                                 }
                             ];
                         }
@@ -241,7 +313,7 @@ module.exports = function(pb) {
                     //handle error
                     eventTemplate = eventTemp;
 
-                    cos.loadTypeByName('pb_calendar_event', function(err, eventType) {
+                    cos.loadTypeByName(EVENT_OBJ_TYPE, function(err, eventType) {
                         if(!eventType) {
                             return cb(err, '');
                         }
@@ -262,7 +334,7 @@ module.exports = function(pb) {
         });
 
         pb.TemplateService.registerGlobal('pb_calendar_events', function(flag, cb) {
-            cos.loadTypeByName('pb_calendar_event', function(err, eventType) {
+            cos.loadTypeByName(EVENT_OBJ_TYPE, function(err, eventType) {
                 if(!eventType) {
                     return cb(err, '[]');
                 }
