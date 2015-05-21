@@ -242,7 +242,7 @@ module.exports = function(pb) {
                 var event = eventData[index];
                 self.getVenue(event.venue, function(venue) {
                     var eventString = eventTemplate.split('^event_url^').join(event.url || '');
-                    eventString = eventString.split('^event_id^').join(event._id.toString());
+                    eventString = eventString.split('^event_id^').join(event[pb.DAO.getIdField()].toString());
                     eventString = eventString.split('^event_name^').join(event.name);
                     eventString = eventString.split('^event_date^').join(ContentService.getTimestampTextFromSettings(event.start_date, contentSettings, self.ls));
                     eventString = eventString.split('^venue_url^').join(venue.url || '');
