@@ -241,11 +241,11 @@ module.exports = function(pb) {
 
                 var event = eventData[index];
                 self.getVenue(event.venue, function(venue) {
-                    var eventString = eventTemplate.split('^event_url^').join(event.url);
+                    var eventString = eventTemplate.split('^event_url^').join(event.url || '');
                     eventString = eventString.split('^event_id^').join(event._id.toString());
                     eventString = eventString.split('^event_name^').join(event.name);
                     eventString = eventString.split('^event_date^').join(ContentService.getTimestampTextFromSettings(event.start_date, contentSettings, self.ls));
-                    eventString = eventString.split('^venue_url^').join(venue.url);
+                    eventString = eventString.split('^venue_url^').join(venue.url || '');
                     eventString = eventString.split('^venue_name^').join(venue.name);
                     eventString = eventString.split('^venue_address^').join(venue.address);
                     eventString = eventString.split('^event_description^').join(event.description);
@@ -314,16 +314,22 @@ module.exports = function(pb) {
                     eventTemplate = eventTemp;
 
                     cos.loadTypeByName(EVENT_OBJ_TYPE, function(err, eventType) {
-                        if(!eventType) {
+                        if(util.isError(err) || !eventType) {
                             return cb(err, '');
                         }
 
                         var opts = {
-                            where: {type: eventType._id.toString(), end_date: {$gte: now}},
-                            order: [["start_date", pb.DAO.ASC]]
+                            where: {
+                                end_date: {$gte: now}
+                            },
+                            order: {
+                                start_date: pb.DAO.ASC
+                            }
                         };
-                        dao.q('custom_object', opts, function(err, eventObjects) {
-                            //TODO handle error
+                        cos.findByType(eventType, opts, function(err, eventObjects) {
+                            if(util.isError(err) || !util.isArray(eventObjects)) {
+                                return cb(err, '');
+                            }
                             
                             eventData = eventObjects;
                             formatEvent(0);
@@ -342,14 +348,18 @@ module.exports = function(pb) {
                 var now = new Date();
                 var timezoneOffset = now.getTimezoneOffset() * 1000 * 60;
 
-                var events = [];
+                
                 var opts = {
                     where: {
                         type: eventType[pb.DAO.getIdField()].toString()
                     }
                 };
-                dao.q('custom_object', opts, function(err, eventObjects) {
-                    //handle error
+                cos.findByType(eventType, opts, function(err, eventObjects) {
+                    if (util.isError(err)) {
+                        return cb(err, '');
+                    }
+                
+                    var events = [];
                     eventObjects.forEach(function(obj) {
                         var event = {
                             title: obj.name,
