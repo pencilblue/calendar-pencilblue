@@ -286,6 +286,7 @@ module.exports = function(pb) {
                     month = '0' + month;
                 }
 
+
                 var day = date.getUTCDate();
                 if(day < 10) {
                     day = '0' + day;
@@ -301,7 +302,7 @@ module.exports = function(pb) {
                     minutes = '0' + minutes;
                 }
 
-                return date.getUTCFullYear() + month + day + 'T' + hours + minutes + '00Z';
+                return date.getUTCFullYear().toString() + month + day + 'T' + hours + minutes + '00Z';
             };
 
             var contentService = new ContentService();
