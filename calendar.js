@@ -309,7 +309,7 @@ module.exports = function(pb) {
                 //handle error
                 contentSettings = settings;
 
-                ts.load('elements/event', function(err, eventTemp) {
+                ts.load('elements/event_index', function(err, eventTemp) {
                     //handle error
                     eventTemplate = eventTemp;
 
