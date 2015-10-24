@@ -218,6 +218,127 @@ module.exports = function(pb) {
             });
         });
 
+        pb.TemplateService.registerGlobal('pb_calendar_events_list_short', function(flag, cb) {
+            var self = this;
+            var now = new Date();
+            var ts = new pb.TemplateService(new pb.Localization());
+            var contentSettings;
+            var eventData;
+            var eventTemplate;
+            var events = '';
+
+            this.formatEvent = function(index) {
+                if(index >= eventData.length) {
+                    cb(null, new pb.TemplateValue(events, false));
+                    return;
+                }
+
+                var defaultVenue = {
+                    name: '',
+                    address: '',
+                    url: ''
+                };
+
+                var event = eventData[index];
+                self.getVenue(event.venue, function(venue) {
+                    var eventString = eventTemplate.split('^event_url^').join(event.url || '');
+                    eventString = eventString.split('^event_id^').join(event[pb.DAO.getIdField()].toString());
+                    eventString = eventString.split('^event_name^').join(event.name);
+                    eventString = eventString.split('^event_date^').join(ContentService.getTimestampTextFromSettings(event.start_date, contentSettings, self.ls));
+                    eventString = eventString.split('^venue_url^').join(venue.url || '');
+                    eventString = eventString.split('^venue_name^').join(venue.name);
+                    eventString = eventString.split('^venue_address^').join(venue.address);
+                    eventString = eventString.split('^event_description^').join('');
+                    eventString = eventString.split('^event_start_zulu^').join(self.getZuluTimestamp(event.start_date));
+                    eventString = eventString.split('^event_end_zulu^').join(self.getZuluTimestamp(event.end_date));
+
+                    events += eventString;
+                    index++;
+                    self.formatEvent(index);
+                });
+            };
+
+            this.getVenue = function(venueId, cb) {
+                var defaultVenue = {
+                    name: '',
+                    address: '',
+                    url: ''
+                };
+
+                if(!venueId || !pb.validation.isIdStr(venueId)) {
+                    cb(defaultVenue);
+                    return;
+                }
+
+                dao.loadById(venueId, 'custom_object', function(error, venue) {
+                    if(!venue) {
+                        cb(defaultVenue);
+                        return;
+                    }
+
+                    cb(venue);
+                });
+            };
+
+            this.getZuluTimestamp = function(date) {
+                var month = date.getUTCMonth() + 1;
+                if(month < 10) {
+                    month = '0' + month;
+                }
+
+                var day = date.getUTCDate();
+                if(day < 10) {
+                    day = '0' + day;
+                }
+
+                var hours = date.getUTCHours();
+                if(hours < 10) {
+                    hours = '0' + hours;
+                }
+
+                var minutes = date.getUTCMinutes();
+                if(minutes < 10) {
+                    minutes = '0' + minutes;
+                }
+
+                return date.getUTCFullYear() + month + day + 'T' + hours + minutes + '00Z';
+            };
+
+            var contentService = new ContentService();
+            contentService.getSettings(function(err, settings) {
+                //handle error
+                contentSettings = settings;
+
+                ts.load('elements/event', function(err, eventTemp) {
+                    //handle error
+                    eventTemplate = eventTemp;
+
+                    cos.loadTypeByName(EVENT_OBJ_TYPE, function(err, eventType) {
+                        if(util.isError(err) || !eventType) {
+                            return cb(err, '');
+                        }
+
+                        var opts = {
+                            where: {
+                                end_date: {$gte: now}
+                            },
+                            order: {
+                                start_date: pb.DAO.ASC
+                            }
+                        };
+                        cos.findByType(eventType, opts, function(err, eventObjects) {
+                            if(util.isError(err) || !util.isArray(eventObjects)) {
+                                return cb(err, '');
+                            }
+                            
+                            eventData = eventObjects;
+                            formatEvent(0);
+                        });
+                    });
+                });
+            });
+        });
+
         pb.TemplateService.registerGlobal('pb_calendar_events_list', function(flag, cb) {
             var self = this;
             var now = new Date();
@@ -286,7 +407,6 @@ module.exports = function(pb) {
                     month = '0' + month;
                 }
 
-
                 var day = date.getUTCDate();
                 if(day < 10) {
                     day = '0' + day;
@@ -302,7 +422,7 @@ module.exports = function(pb) {
                     minutes = '0' + minutes;
                 }
 
-                return date.getUTCFullYear().toString() + month + day + 'T' + hours + minutes + '00Z';
+                return date.getUTCFullYear() + month + day + 'T' + hours + minutes + '00Z';
             };
 
             var contentService = new ContentService();
