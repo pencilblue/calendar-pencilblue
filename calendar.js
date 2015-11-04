@@ -16,8 +16,6 @@
 */
 
 var async = require('async');
-var co = require('co');
-
 
 module.exports = function(pb) {
     
