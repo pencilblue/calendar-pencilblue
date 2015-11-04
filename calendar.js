@@ -15,6 +15,10 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+var async = require('async');
+var co = require('co');
+
+
 module.exports = function(pb) {
     
     //pb dependencies
@@ -251,6 +255,9 @@ module.exports = function(pb) {
                     eventString = eventString.split('^event_description^').join('');
                     eventString = eventString.split('^event_start_zulu^').join(self.getZuluTimestamp(event.start_date));
                     eventString = eventString.split('^event_end_zulu^').join(self.getZuluTimestamp(event.end_date));
+                    self.getTopics(event.topics, function(topics) {
+                        eventString = eventString.split('^event_topics^').join(topics);
+                    });
 
                     events += eventString;
                     index++;
@@ -373,9 +380,40 @@ module.exports = function(pb) {
                     eventString = eventString.split('^event_start_zulu^').join(self.getZuluTimestamp(event.start_date));
                     eventString = eventString.split('^event_end_zulu^').join(self.getZuluTimestamp(event.end_date));
 
-                    events += eventString;
-                    index++;
-                    self.formatEvent(index);
+                    var tasks = util.getTasks(event.topics, function(topic, i) {
+                        return function(callback) {
+                            dao.loadById(event.topics[i], 'topic', function(error, t) {
+                                var html = '<a class="ssf-topic label" href="/topic/' + t.name + '">' + t.name + '</a>';
+                                callback(null, html)
+                            });
+                        };
+                    });
+
+                    async.parallel(tasks, function(err, results) {
+                        eventString = eventString.split('^event_topics^').join(results.join(' '));
+                        events += eventString;
+                        index++;
+                        self.formatEvent(index);
+                    });
+                });
+            };
+
+            this.getTopics = function(topics, cb) {
+                var topicDescriptions = [];
+                async.series([
+                    function(callback) {
+                        for(var i = 0; i < topics.length; i++) {
+                            dao.loadById(topics[i], 'topic', function(error, t) {
+                                topicDescriptions.push(t.name);
+                                if(i === topics.length) callback(null, null);
+                            });
+                        }
+                    }
+                ],
+                function(err, results) {
+                    if(topicDescriptions.length === topics.length) {
+                        cb(topicDescriptions);
+                    }
                 });
             };
 
@@ -484,6 +522,7 @@ module.exports = function(pb) {
                     eventObjects.forEach(function(obj) {
                         var event = {
                             title: obj.name,
+                            topics: obj.topics,
                             start: new Date(obj.start_date).getTime() - timezoneOffset,
                             end: new Date(obj.end_date).getTime() - timezoneOffset,
                             url: (new Date(obj.end_date) >= now) ? 'javascript:$("#event_' + obj[pb.DAO.getIdField()].toString() + '")[0].scrollIntoView(true)' : null
