@@ -1,1 +1,24 @@
-../../../../ssftemplate.plugins/calendar-pencilblue/templates/calendar.html
+<div class="fc-above-768" style="^pb_show_calendar^">
+    <div id="calendar"></div>
+</div>
+<div>
+    ^pb_calendar_events_list^
+</div>
+<script type="text/javascript" src="/public/calendar-pencilblue/js/moment.min.js"></script>
+<script type="text/javascript" src="/public/calendar-pencilblue/js/fullcalendar.min.js"></script>
+<script type="text/javascript">
+    $('<link rel="stylesheet" type="text/css" href="/public/calendar-pencilblue/css/fullcalendar.css">').appendTo(document.head);
+    $('<link rel="stylesheet" type="text/css" href="^pb_calendar_css^">').appendTo(document.head);
+
+    $(document).ready(function() {
+        $('#calendar').fullCalendar({
+            editable: false,
+            header: {
+				left: 'prev,next',
+                center: 'title',
+                right: 'today'
+            },
+            events: ^pb_calendar_events^
+        });
+    });
+</script>
