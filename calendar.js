@@ -243,7 +243,7 @@ module.exports = function(pb) {
 
                 var event = eventData[index];
                 self.getVenue(event.venue, function(venue) {
-                    var eventString = eventTemplate.split('^event_url^').join(event.url || '');
+                    var eventString = eventTemplate.split('^event_url^').join('/event/^event_id^');
                     eventString = eventString.split('^event_id^').join(event[pb.DAO.getIdField()].toString());
                     eventString = eventString.split('^event_name^').join(event.name);
                     eventString = eventString.split('^event_date^').join(ContentService.getTimestampTextFromSettings(event.start_date, contentSettings, self.ls));
@@ -390,6 +390,7 @@ module.exports = function(pb) {
                     var tasks = util.getTasks(event.topics, function(topic, i) {
                         return function(callback) {
                             dao.loadById(event.topics[i], 'topic', function(error, t) {
+console.log('calendar - fix this to render template instead of inline html');
                                 var html = '<a class="ssf-topic label" href="/topic/' + t.name + '">' + t.name + '</a>';
                                 callback(null, html)
                             });
