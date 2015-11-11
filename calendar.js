@@ -15,7 +15,8 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-var async = require('async');
+var async = require('async'),
+    moment = require('moment');
 
 module.exports = function(pb) {
     
@@ -241,12 +242,25 @@ module.exports = function(pb) {
                     url: ''
                 };
 
-                var event = eventData[index];
+                var event = eventData[index],
+                    eventDate = null;
+
+                /* This is a multi day event */
+                if(event.start_date.getDate() !== event.end_date.getDate()) {
+                    eventDate = moment(event.start_date).format('MMMM Do, YYYY');
+                    eventDate += ' - ' + moment(event.end_date).format('MMMM Do, YYYY');
+                }
+                /* This is a single day event */
+                else {
+                    eventDate = moment(event.start_date).format('MMMM Do, YYYY h:mm a');
+                    eventDate += ' - ' + moment(event.end_date).format('h:mm a');
+                }
+
                 self.getVenue(event.venue, function(venue) {
                     var eventString = eventTemplate.split('^event_url^').join('/event/^event_id^');
                     eventString = eventString.split('^event_id^').join(event[pb.DAO.getIdField()].toString());
                     eventString = eventString.split('^event_name^').join(event.name);
-                    eventString = eventString.split('^event_date^').join(ContentService.getTimestampTextFromSettings(event.start_date, contentSettings, self.ls));
+                    eventString = eventString.split('^event_date^').join(eventDate);
                     eventString = eventString.split('^venue_url^').join(venue.url || '');
                     eventString = eventString.split('^venue_name^').join(venue.name);
                     eventString = eventString.split('^venue_address^').join(venue.address);
@@ -257,8 +271,151 @@ module.exports = function(pb) {
                     var tasks = util.getTasks(event.topics, function(topic, i) {
                         return function(callback) {
                             dao.loadById(event.topics[i], 'topic', function(error, t) {
-                                var html = '<a class="ssf-topic label" href="/topic/' + t.name + '">' + t.name + '</a>';
-                                callback(null, html)
+                                Calendar.prototype.renderTopic(t, callback);
+                            });
+                        };
+                    });
+
+                    async.parallel(tasks, function(err, results) {
+                        eventString = eventString.split('^event_topics^').join(results.join(' '));
+                        events += eventString;
+                        index++;
+                        self.formatEvent(index);
+                    });
+                });
+            };
+
+            this.getVenue = function(venueId, cb) {
+                var defaultVenue = {
+                    name: '',
+                    address: '',
+                    url: ''
+                };
+
+                if(!venueId || !pb.validation.isIdStr(venueId)) {
+                    cb(defaultVenue);
+                    return;
+                }
+
+                dao.loadById(venueId, 'custom_object', function(error, venue) {
+                    if(!venue) {
+                        cb(defaultVenue);
+                        return;
+                    }
+                    cb(venue);
+                });
+            };
+
+            this.getZuluTimestamp = function(date) {
+                var month = date.getUTCMonth() + 1;
+                if(month < 10) {
+                    month = '0' + month;
+                }
+
+                var day = date.getUTCDate();
+                if(day < 10) {
+                    day = '0' + day;
+                }
+
+                var hours = date.getUTCHours();
+                if(hours < 10) {
+                    hours = '0' + hours;
+                }
+
+                var minutes = date.getUTCMinutes();
+                if(minutes < 10) {
+                    minutes = '0' + minutes;
+                }
+
+                return date.getUTCFullYear() + month + day + 'T' + hours + minutes + '00Z';
+            };
+
+            var contentService = new ContentService();
+            contentService.getSettings(function(err, settings) {
+                //handle error
+                contentSettings = settings;
+
+                ts.load('elements/event_index', function(err, eventTemp) {
+                    //handle error
+                    eventTemplate = eventTemp;
+
+                    cos.loadTypeByName(EVENT_OBJ_TYPE, function(err, eventType) {
+                        if(util.isError(err) || !eventType) {
+                            return cb(err, '');
+                        }
+
+                        var opts = {
+                            where: {
+                                end_date: {$gte: now}
+                            },
+                            order: {
+                                start_date: pb.DAO.ASC
+                            }
+                        };
+                        cos.findByType(eventType, opts, function(err, eventObjects) {
+                            if(util.isError(err) || !util.isArray(eventObjects)) {
+                                return cb(err, '');
+                            }
+                            
+                            eventData = eventObjects;
+                            formatEvent(0);
+                        });
+                    });
+                });
+            });
+        });
+
+        pb.TemplateService.registerGlobal('pb_calendar_events_list', function(flag, cb) {
+            var self = this;
+            var now = new Date();
+            var ts = new pb.TemplateService(new pb.Localization());
+            var contentSettings;
+            var eventData;
+            var eventTemplate;
+            var events = '';
+
+            this.formatEvent = function(index) {
+                if(index >= eventData.length) {
+                    cb(null, new pb.TemplateValue(events, false));
+                    return;
+                }
+
+                var defaultVenue = {
+                    name: '',
+                    address: '',
+                    url: ''
+                };
+
+                var event = eventData[index];
+                    eventDate = null;
+
+                /* This is a multi day event */
+                if(event.start_date.getDate() !== event.end_date.getDate()) {
+                    eventDate = moment(event.start_date).format('MMMM Do, YYYY');
+                    eventDate += ' - ' + moment(event.end_date).format('MMMM Do, YYYY');
+                }
+                /* This is a single day event */
+                else {
+                    eventDate = moment(event.start_date).format('MMMM Do, YYYY h:mm a');
+                    eventDate += ' - ' + moment(event.end_date).format('h:mm a');
+                }
+
+                self.getVenue(event.venue, function(venue) {
+                    var eventString = eventTemplate.split('^event_url^').join('/event/^event_id^');
+                    eventString = eventString.split('^event_id^').join(event[pb.DAO.getIdField()].toString());
+                    eventString = eventString.split('^event_name^').join(event.name);
+                    eventString = eventString.split('^event_date^').join(eventDate);
+                    eventString = eventString.split('^venue_url^').join(venue.url || '');
+                    eventString = eventString.split('^venue_name^').join(venue.name);
+                    eventString = eventString.split('^venue_address^').join(venue.address);
+                    eventString = eventString.split('^event_description^').join(event.description);
+                    eventString = eventString.split('^event_start_zulu^').join(self.getZuluTimestamp(event.start_date));
+                    eventString = eventString.split('^event_end_zulu^').join(self.getZuluTimestamp(event.end_date));
+
+                    var tasks = util.getTasks(event.topics, function(topic, i) {
+                        return function(callback) {
+                            dao.loadById(event.topics[i], 'topic', function(error, t) {
+                                Calendar.prototype.renderTopic(t, callback);
                             });
                         };
                     });
@@ -353,140 +510,6 @@ module.exports = function(pb) {
             });
         });
 
-        pb.TemplateService.registerGlobal('pb_calendar_events_list', function(flag, cb) {
-            var self = this;
-            var now = new Date();
-            var ts = new pb.TemplateService(new pb.Localization());
-            var contentSettings;
-            var eventData;
-            var eventTemplate;
-            var events = '';
-
-            this.formatEvent = function(index) {
-                if(index >= eventData.length) {
-                    cb(null, new pb.TemplateValue(events, false));
-                    return;
-                }
-
-                var defaultVenue = {
-                    name: '',
-                    address: '',
-                    url: ''
-                };
-
-                var event = eventData[index];
-                self.getVenue(event.venue, function(venue) {
-                    var eventString = eventTemplate.split('^event_url^').join(event.url || '');
-                    eventString = eventString.split('^event_id^').join(event[pb.DAO.getIdField()].toString());
-                    eventString = eventString.split('^event_name^').join(event.name);
-                    eventString = eventString.split('^event_date^').join(ContentService.getTimestampTextFromSettings(event.start_date, contentSettings, self.ls));
-                    eventString = eventString.split('^venue_url^').join(venue.url || '');
-                    eventString = eventString.split('^venue_name^').join(venue.name);
-                    eventString = eventString.split('^venue_address^').join(venue.address);
-                    eventString = eventString.split('^event_description^').join(event.description);
-                    eventString = eventString.split('^event_start_zulu^').join(self.getZuluTimestamp(event.start_date));
-                    eventString = eventString.split('^event_end_zulu^').join(self.getZuluTimestamp(event.end_date));
-
-                    var tasks = util.getTasks(event.topics, function(topic, i) {
-                        return function(callback) {
-                            dao.loadById(event.topics[i], 'topic', function(error, t) {
-console.log('calendar - fix this to render template instead of inline html');
-                                var html = '<a class="ssf-topic label" href="/topic/' + t.name + '">' + t.name + '</a>';
-                                callback(null, html)
-                            });
-                        };
-                    });
-
-                    async.parallel(tasks, function(err, results) {
-                        eventString = eventString.split('^event_topics^').join(results.join(' '));
-                        events += eventString;
-                        index++;
-                        self.formatEvent(index);
-                    });
-                });
-            };
-
-            this.getVenue = function(venueId, cb) {
-                var defaultVenue = {
-                    name: '',
-                    address: '',
-                    url: ''
-                };
-
-                if(!venueId || !pb.validation.isIdStr(venueId)) {
-                    cb(defaultVenue);
-                    return;
-                }
-
-                dao.loadById(venueId, 'custom_object', function(error, venue) {
-                    if(!venue) {
-                        cb(defaultVenue);
-                        return;
-                    }
-
-                    cb(venue);
-                });
-            };
-
-            this.getZuluTimestamp = function(date) {
-                var month = date.getUTCMonth() + 1;
-                if(month < 10) {
-                    month = '0' + month;
-                }
-
-                var day = date.getUTCDate();
-                if(day < 10) {
-                    day = '0' + day;
-                }
-
-                var hours = date.getUTCHours();
-                if(hours < 10) {
-                    hours = '0' + hours;
-                }
-
-                var minutes = date.getUTCMinutes();
-                if(minutes < 10) {
-                    minutes = '0' + minutes;
-                }
-
-                return date.getUTCFullYear() + month + day + 'T' + hours + minutes + '00Z';
-            };
-
-            var contentService = new ContentService();
-            contentService.getSettings(function(err, settings) {
-                //handle error
-                contentSettings = settings;
-
-                ts.load('elements/event', function(err, eventTemp) {
-                    //handle error
-                    eventTemplate = eventTemp;
-
-                    cos.loadTypeByName(EVENT_OBJ_TYPE, function(err, eventType) {
-                        if(util.isError(err) || !eventType) {
-                            return cb(err, '');
-                        }
-
-                        var opts = {
-                            where: {
-                                end_date: {$gte: now}
-                            },
-                            order: {
-                                start_date: pb.DAO.ASC
-                            }
-                        };
-                        cos.findByType(eventType, opts, function(err, eventObjects) {
-                            if(util.isError(err) || !util.isArray(eventObjects)) {
-                                return cb(err, '');
-                            }
-                            
-                            eventData = eventObjects;
-                            formatEvent(0);
-                        });
-                    });
-                });
-            });
-        });
-
         pb.TemplateService.registerGlobal('pb_calendar_events', function(flag, cb) {
             cos.loadTypeByName(EVENT_OBJ_TYPE, function(err, eventType) {
                 if(!eventType) {
@@ -526,6 +549,13 @@ console.log('calendar - fix this to render template instead of inline html');
         });
 
         cb(null, false);
+    };
+
+    Calendar.prototype.renderTopic = function(topic, cb) {
+        var ats = new pb.TemplateService(this.ls);
+        ats.registerLocal('topic_name', topic.name);
+        ats.registerLocal('topic_name_encoded', encodeURIComponent(topic.name));
+        ats.load('elements/topic', cb);
     };
 
     /**

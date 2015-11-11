@@ -1,5 +1,17 @@
 <div id="event_^event_id^" class="ssf-events-calendar">
     <h2><a href="^event_url^">^event_name^</a></h2>
+    <!-- ^ tmp_elements=event=event_buttons ^ -->
     <h4>^event_date^</h4>
     <h5>^venue_name^</h5>
+<!--
+    <p><button onclick="toggleLike('^event_id^')">like</button></p>
+-->
 </div>
+
+<script>
+    function toggleLike(event_id) {
+        $.post('/api/fav/' + event_id, function(data) {
+            console.log(data);
+        });
+    }
+</script>

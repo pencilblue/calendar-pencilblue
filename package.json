@@ -1,0 +1,22 @@
+{
+  "name": "calendar-pencilblue",
+  "version": "1.0.0",
+  "description": "[Events Calendar for PencilBlue](http://pencilblue.org) =====",
+  "main": "calendar.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ssfapp/calendar-pencilblue.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ssfapp/calendar-pencilblue/issues"
+  },
+  "homepage": "https://github.com/ssfapp/calendar-pencilblue#readme",
+  "dependencies": {
+    "moment": "^2.10.6"
+  }
+}
