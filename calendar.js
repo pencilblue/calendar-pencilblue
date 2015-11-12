@@ -346,7 +346,7 @@ module.exports = function(pb) {
 
                         var opts = {
                             where: {
-                                end_date: {$gte: now}
+                                start_date: {$gte: now}
                             },
                             order: {
                                 start_date: pb.DAO.ASC
@@ -537,7 +537,8 @@ module.exports = function(pb) {
                             topics: obj.topics,
                             start: new Date(obj.start_date).getTime() - timezoneOffset,
                             end: new Date(obj.end_date).getTime() - timezoneOffset,
-                            url: (new Date(obj.end_date) >= now) ? 'javascript:$("#event_' + obj[pb.DAO.getIdField()].toString() + '")[0].scrollIntoView(true)' : null
+                            url: '/event/' + obj._id
+//(new Date(obj.end_date) >= now) ? 'javascript:$("#event_' + obj[pb.DAO.getIdField()].toString() + '")[0].scrollIntoView(true)' : null
                         };
 
                         events.push(event);
