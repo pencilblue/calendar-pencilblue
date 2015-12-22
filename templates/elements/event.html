@@ -1,13 +1,8 @@
 <div id="event_^event_id^">
-    <div class="ssf-title-actions">
-        <h2><a href="^event_url^">^event_name^</a></h2>
-        <a href="javascript:toggleFav('^event_id^')" id="fave-^event_id^"
-           data-fave-id="^event_id^" class="btn-link ssf-fave"
-           data-toggle="tooltip" role="button" disabled></a>
-    </div>
-    <!-- ^ tmp_elements=event=event_buttons ^ -->
+    <h2><a href="^event_url^" target="_blank">^event_name^</a></h2>
+    ^tmp_elements=event=event_buttons^
     <h4>^event_date^</h4>
-    <h5>^venue_name^</h5>
-    <h5>^venue_address^</h5>
-    <p>^event_topics^</p>
+    <h5><a href="^venue_url^" target="_blank">^venue_name^</a></h5>
+    <h5><a href="https://maps.google.com/?q=^venue_address^" target="_blank">^venue_address^</a></h5>
+    <p>^event_description^</p>
 </div>
